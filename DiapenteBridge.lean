@@ -1,1 +1,1 @@
-import DiapenteBridge.Basic
+import DiapenteBridge.DiapenteBridge
