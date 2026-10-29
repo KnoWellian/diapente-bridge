@@ -2,7 +2,7 @@ import os
 import re
 from datetime import datetime
 
-LEAN_DIR = r"TopologicalEntropicPeriodicTable"
+LEAN_DIR = r"DiapenteBridge"
 REPORT_FILE = "VERIFICATION_REPORT.md"
 
 theorem_pattern = re.compile(r"^(?:protected\s+)?theorem\s+([A-Za-z0-9_]+)", re.MULTILINE)
