@@ -16,3 +16,5 @@ rev = "v4.36.0-rc2"
 
 [[lean_lib]]
 name = "DiapenteBridge"
+# Explicitly direct the library build tool to locate your nested module file
+roots = ["DiapenteBridge.DiapenteBridge"]
