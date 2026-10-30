@@ -4,10 +4,10 @@ FILE: DiapenteBridge.lean
 TITLE: Formalization of the Diapente Bridge Architecture
 AUTHORS: David Noel Lynch (~3K) & A. D. Wissner-Gross
 KERNEL: Lean 4.36 (Core + Mathlib Analysis)
-NOTE ON AXIOMS: Modules 1 and 2 use no custom axioms. Module 3 adds exactly two
-  numerical-bound axioms (`alpha_inv_discrete_bounds`, `alpha_inv_continuous_bounds`),
-  so `diapente_bridge_asymptotic_concordance` is conditional on them. Run
-  `#print axioms DiapenteBridge.diapente_bridge_asymptotic_concordance` to confirm.
+NOTE ON AXIOMS: No custom axioms. Both interval bounds are proved from Mathlib's
+  rigorous bounds on pi (Real.pi_gt_d20 / Real.pi_lt_d20) and on square roots.
+  Run `#print axioms DiapenteBridge.diapente_bridge_asymptotic_concordance` to confirm
+  only [propext, Classical.choice, Quot.sound] appear.
 ===================================================================================
 -/
 
@@ -15,6 +15,7 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Data.Complex.Basic
 import Mathlib.Analysis.Real.Sqrt
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+import Mathlib.Analysis.Real.Pi.Bounds
 import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Algebra.Polynomial.Eval.Defs
 import Mathlib.Tactic.Ring
@@ -628,21 +629,59 @@ noncomputable def absoluteBridgeResidual (c : KnotCorr) : ℝ :=
     (about 38 parts per billion relative to α⁻¹ ≈ 137.036). -/
 def ppbBound : ℝ := 0.00000522
 
-/-- Certified bounds for the discrete inverse fine structure constant.
-    NOTE: assumed as an axiom, not derived from the definitions above. -/
-axiom alpha_inv_discrete_bounds :
-  (137.035999189 : ℝ) < alpha_inv_discrete ∧
-  alpha_inv_discrete < (137.035999190 : ℝ)
+/-- Closed form of the discrete inverse coupling. -/
+theorem alpha_inv_discrete_eq :
+    alpha_inv_discrete = 31104 / (79 + 48 * sqrt 2 + 42 * sqrt 3 + 3 * sqrt 6) := by
+  unfold alpha_inv_discrete tr_M_real N_dim n_odd n_mixed n_same n_comm
+  push_cast
+  first | ring1 | (congr 1; ring1)
 
-/-- Certified bounds for the continuous inverse fine structure constant.
-    NOTE: assumed as an axiom, not derived from the definitions above. -/
-axiom alpha_inv_continuous_bounds :
-  (137.035993971 : ℝ) < alpha_inv_continuous ∧
-  alpha_inv_continuous < (137.035993972 : ℝ)
+/-- Proved bounds for the discrete inverse fine structure constant. -/
+theorem alpha_inv_discrete_bounds :
+    (137.035999189 : ℝ) < alpha_inv_discrete ∧
+    alpha_inv_discrete < (137.035999190 : ℝ) := by
+  have s2l : (1.4142135623730 : ℝ) < sqrt 2 := by
+    rw [Real.lt_sqrt (by norm_num)]; norm_num
+  have s2u : sqrt 2 < (1.4142135623731 : ℝ) := by
+    rw [Real.sqrt_lt' (by norm_num)]; norm_num
+  have s3l : (1.7320508075688 : ℝ) < sqrt 3 := by
+    rw [Real.lt_sqrt (by norm_num)]; norm_num
+  have s3u : sqrt 3 < (1.7320508075689 : ℝ) := by
+    rw [Real.sqrt_lt' (by norm_num)]; norm_num
+  have s6l : (2.4494897427831 : ℝ) < sqrt 6 := by
+    rw [Real.lt_sqrt (by norm_num)]; norm_num
+  have s6u : sqrt 6 < (2.4494897427832 : ℝ) := by
+    rw [Real.sqrt_lt' (by norm_num)]; norm_num
+  rw [alpha_inv_discrete_eq]
+  have hpos : (0 : ℝ) < 79 + 48 * sqrt 2 + 42 * sqrt 3 + 3 * sqrt 6 := by positivity
+  constructor
+  · rw [lt_div_iff₀ hpos]; linarith
+  · rw [div_lt_iff₀ hpos]; linarith
+
+/-- Proved bounds for the continuous inverse fine structure constant.
+    (The earlier axiom claimed (137.035993971, 137.035993972); the true value of
+    4π³ + π² + π − 0.0003098 is 137.0359939758…, so that interval was wrong.) -/
+theorem alpha_inv_continuous_bounds :
+    (137.035993975 : ℝ) < alpha_inv_continuous ∧
+    alpha_inv_continuous < (137.035993977 : ℝ) := by
+  have hl := Real.pi_gt_d20
+  have hu := Real.pi_lt_d20
+  have l2 : (3.14159265358979323846 : ℝ) ^ 2 < π ^ 2 := by gcongr
+  have l3 : (3.14159265358979323846 : ℝ) ^ 3 < π ^ 3 := by gcongr
+  have u2 : π ^ 2 < (3.14159265358979323847 : ℝ) ^ 2 := by gcongr
+  have u3 : π ^ 3 < (3.14159265358979323847 : ℝ) ^ 3 := by gcongr
+  have l2' : (9.869604401089358618 : ℝ) < π ^ 2 := lt_of_le_of_lt (by norm_num) l2
+  have l3' : (31.0062766802998201753 : ℝ) < π ^ 3 := lt_of_le_of_lt (by norm_num) l3
+  have u2' : π ^ 2 < (9.86960440108935862 : ℝ) := lt_of_lt_of_le u2 (by norm_num)
+  have u3' : π ^ 3 < (31.0062766802998201757 : ℝ) := lt_of_lt_of_le u3 (by norm_num)
+  unfold alpha_inv_continuous bgSum delta_total_cont
+  constructor
+  · linarith
+  · linarith
 
 /--
 THEOREM: The Bridge Convergence.
-Conditional on the two bound axioms above, the continuous geometric expansion
+Using the two proved interval bounds above, the continuous geometric expansion
 and the discrete qudit trace differ by less than 5.22 × 10⁻⁶.
 -/
 theorem diapente_bridge_asymptotic_concordance : |bridgeResidual| < ppbBound := by
@@ -654,6 +693,6 @@ theorem diapente_bridge_asymptotic_concordance : |bridgeResidual| < ppbBound := 
   · linarith
   · linarith
 
-#print axioms DiapenteBridge.diapente_bridge_asymptotic_concordance
-
 end DiapenteBridge
+
+#print axioms DiapenteBridge.diapente_bridge_asymptotic_concordance
